@@ -1,0 +1,20 @@
+{
+  "manifest_version": 3,
+  "author": "James McGahn",
+  "name": "English Words Anki",
+  "description": "Send unknown words to EnglishWords Anki Integration",
+  "version": "1.0",
+  "icons": {
+    "16": "icon.png",
+    "48": "icon.png",
+    "128": "icon.png"
+  },
+  "action": {
+    "default_icon": "icon.png",
+    "default_title": "English Words Anki"
+  },
+  "permissions": ["contextMenus","notifications"],
+    "background": {
+    "service_worker": "background.js"
+  }
+}
