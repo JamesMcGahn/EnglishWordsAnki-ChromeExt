@@ -1,16 +1,23 @@
 chrome.runtime.onInstalled.addListener((details) => {
+  createContextMenu();
+});
+
+chrome.runtime.onStartup.addListener(() => {
+  createContextMenu();
+});
+
+function createContextMenu() {
   chrome.contextMenus.create({
     title: "Save to word to EnglishWordsAnki",
     id: "contextMenu1",
-    contexts: ["page", "selection"],
+    contexts: ["selection"],
   });
-
   chrome.contextMenus.onClicked.addListener((event) => {
     if (event.menuItemId === "contextMenu1") {
       sendData(event);
     }
   });
-});
+}
 
 function getEndpoint() {
   return new Promise((resolve) => {
