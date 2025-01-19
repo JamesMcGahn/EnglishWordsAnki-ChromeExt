@@ -1,3 +1,6 @@
+let contextMenuCreated = false;
+let clickListenerAdd = false;
+
 chrome.runtime.onInstalled.addListener((details) => {
   createContextMenu();
 });
@@ -7,27 +10,45 @@ chrome.runtime.onStartup.addListener(() => {
 });
 
 function createContextMenu() {
-  chrome.contextMenus.create({
-    title: "Save to word to EnglishWordsAnki",
-    id: "contextMenu1",
-    contexts: ["selection"],
-  });
-  chrome.contextMenus.onClicked.addListener((event) => {
-    if (event.menuItemId === "contextMenu1") {
-      sendData(event);
-    }
-  });
+  if (!contextMenuCreated) {
+    chrome.contextMenus.create({
+      title: "Save to word to EnglishWordsAnki",
+      id: "contextMenu1",
+      contexts: ["selection"],
+    });
+    contextMenuCreated = true;
+  }
+
+  if (!clickListenerAdd) {
+    chrome.contextMenus.onClicked.addListener((event) => {
+      if (event.menuItemId === "contextMenu1") {
+        sendData(event);
+        console.log("click");
+      }
+    });
+    clickListenerAdd = true;
+  }
 }
 
-function getEndpoint() {
-  return new Promise((resolve) => {
-    chrome.storage.sync.get(["endpoint"], (res) => {
-      resolve(res.endpoint ?? "http://127.0.0.1:5000/word");
+async function getEndpoint() {
+  try {
+    const res = await new Promise((resolve) => {
+      chrome.storage.sync.get(["endpoint"], (res) => {
+        resolve(res.endpoint);
+      });
     });
-  });
+    return res ?? "http://127.0.0.1:5000/word";
+  } catch (err) {
+    console.log("Error retrieving endpoint from storage", err);
+  }
 }
 
 async function sendData(event) {
+  if (!event.selectionText || event.selectionText.trim() === "") {
+    sendUserMessage("No text was selected to send.");
+    return;
+  }
+
   const url = await getEndpoint();
   const data = {
     word: `${event.selectionText}`,
@@ -50,11 +71,7 @@ async function sendData(event) {
       return response.json();
     })
     .then((data) => {
-      console.log("Success:", data);
-      this.registration.showNotification("EnglishDict Extension", {
-        body: `${data.word} was sent to EnglishDict Successfully`,
-        icon: "icon.png",
-      });
+      sendUserMessage(`${data.word} was sent to EnglishDict Successfully`);
     })
     .catch((error) => {
       if (error instanceof TypeError && error?.message === "Failed to fetch") {
@@ -62,12 +79,12 @@ async function sendData(event) {
           `Failed to send ${data.word}. Make sure desktop application is opened and endpoint is correct.`,
         );
       }
-      console.error("Error:", error);
+      console.log("Error:", error);
     });
 }
 
 function sendUserMessage(msg) {
-  this.registration.showNotification("EnglishDict Extension", {
+  self.registration.showNotification("EnglishDict Extension", {
     body: msg,
     icon: "icon.png",
   });
